@@ -56,7 +56,7 @@ def get_weights(model):
             x0 = p.data.view(-1)
         else:
             x0 = torch.cat((x0, p.data.view(-1)))
-    return x0.cpu().numpy()
+    return x0.cpu().numpy() # type: ignore
 
 
 def get_sharpness(data_loader, model, subspace_dim=10, epsilon=1e-3, maxiter=10):
@@ -83,7 +83,7 @@ def get_sharpness(data_loader, model, subspace_dim=10, epsilon=1e-3, maxiter=10)
         x_min = np.reshape(x0 - epsilon * (np.abs(x0) + 1), (x0.shape[0], 1))
         x_max = np.reshape(x0 + epsilon * (np.abs(x0) + 1), (x0.shape[0], 1))
         bounds = np.concatenate([x_min, x_max], 1)
-        func = lambda x: get_loss_and_grads(x, model, data_loader)
+        func = lambda x: get_loss_and_grads(x, model, data_loader) # type: ignore
         init_guess = x0
     else:
         assert subspace_dim <= x0.shape[0]
