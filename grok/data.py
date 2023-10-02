@@ -373,10 +373,10 @@ class ArithmeticDataset:
                     cls.write_dataset(eqs, ds_file)
 
     @classmethod
-    def write_dataset(cls, eqs: List[str], ds_file: str):
+    def write_dataset(cls, data: List[str], ds_file: str):
        print(f"-> writing {ds_file}", flush=True)
        with open(ds_file, "w") as fh:
-           fh.writelines([EOS_TOKEN + " " + eq + " " + EOS_TOKEN + "\n" for eq in eqs])
+           fh.writelines([datum + '\n' for datum in data])
 
     @classmethod
     def _make_lists(cls, sizes=[2, 3], nums=NUMS):
