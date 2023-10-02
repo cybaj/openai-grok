@@ -1,13 +1,11 @@
 import itertools
 import math
-import os
-import sys
-import random
+from concurrent.futures import ProcessPoolExecutor
 
 import torch
 from torch import Tensor, LongTensor
 import numpy as np
-from typing import Tuple, List, Dict, Any, Union, Optional
+from typing import List, Dict, Union, Optional
 from tqdm import tqdm
 
 from sympy.combinatorics.permutations import Permutation
@@ -131,6 +129,11 @@ class ArithmeticTokenizer:
         )
         return tokens
 
+    @classmethod
+    def create_token_file(cls, data_dir: str):
+        tokens = cls.get_tokens()
+        with bf.BlobFile(bf.join(data_dir, cls.token_file), "w") as f:
+            f.write("\n".join(tokens))
 
 class ArithmeticDataset:
     """A Dataset of arithmetic equations"""
@@ -289,7 +292,7 @@ class ArithmeticDataset:
             ]
         else:
             with ProcessPoolExecutor() as executor:
-                eqs = executor.map(func, tqdm(zip(operands, rhs), total=num_examples))
+                eqs = list(executor.map(func, tqdm(zip(operands, rhs), total=num_examples)))
 
         return eqs
 
@@ -358,22 +361,22 @@ class ArithmeticDataset:
 
         return data
 
-    # @classmethod
-    # def create_data_file(
-    #    cls, operator, operand_length=None, shuffle=True, data_dir=DEFAULT_DATA_DIR
-    # ):
-    #    if VALID_OPERATORS[operator]["binary_eval"]:
-    #        cls.write_dataset(
-    #            cls.make_binary_operation_data(operator), paths["ds_file"]
-    #        )
-    #
-    #    pass
+    @classmethod
+    def create_dataset_files(cls, data_dir):
+        for operator in VALID_OPERATORS:
+            for operand_length in [2, 3]:
+                ds_file, ds_name = cls.get_file_path(operator, operand_length, data_dir)
+                operands = cls._make_lists([operand_length])[operand_length]
+                if not bf.exists(ds_file):
+                    print(f"-> creating {ds_file}", flush=True)
+                    eqs = cls.make_data(operator, operands=operands, shuffle=True)
+                    cls.write_dataset(eqs, ds_file)
 
-    # @classmethod
-    # def write_dataset(eqs: List[str], ds_file: str):
-    #    print(f"-> writing {ds_file}", flush=True)
-    #    with open(ds_file, "w") as fh:
-    #        fh.writelines([EOS_TOKEN + " " + eq + " " + EOS_TOKEN + "\n" for eq in eqs])
+    @classmethod
+    def write_dataset(cls, eqs: List[str], ds_file: str):
+       print(f"-> writing {ds_file}", flush=True)
+       with open(ds_file, "w") as fh:
+           fh.writelines([EOS_TOKEN + " " + eq + " " + EOS_TOKEN + "\n" for eq in eqs])
 
     @classmethod
     def _make_lists(cls, sizes=[2, 3], nums=NUMS):
@@ -386,7 +389,7 @@ class ArithmeticDataset:
         return lists
 
 
-class ArithmeticIterator(torch.utils.data.IterableDataset):
+class ArithmeticIterator(torch.utils.data.IterableDataset): # type: ignore
     """
     An iterator over batches of data in an ArithmeticDataset
     """
@@ -416,7 +419,7 @@ class ArithmeticIterator(torch.utils.data.IterableDataset):
         self.reset_iteration(shuffle=shuffle)
 
     @staticmethod
-    def calculate_batchsize(ds_size: int, batchsize_hint: int = 0) -> int:
+    def calculate_batchsize(ds_size: int, batchsize_hint: float = 0) -> int:
         """
         Calculates which batch size to use
 
@@ -436,7 +439,7 @@ class ArithmeticIterator(torch.utils.data.IterableDataset):
         elif (batchsize_hint > 0) and (batchsize_hint < 1):
             return math.ceil(ds_size * batchsize_hint)
         elif batchsize_hint > 1:
-            return min(batchsize_hint, ds_size)
+            return min(int(batchsize_hint), ds_size)
         else:
             raise ValueError("batchsize_hint must be >= -1")
 
