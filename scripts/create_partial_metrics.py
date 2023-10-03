@@ -13,17 +13,24 @@ import subprocess
 import torch
 import sys
 from torch.multiprocessing import Process
-from grok import trainer
+from grok import training
 from tqdm import tqdm
 from argparse import ArgumentParser
 from collections import Counter
-from grok_runs import RUNS
-from grok_metrics_lib import (
+# from create_metric_graphs import RUNS
+from grok.visualization import (
     DATA_DIR,
     load_metric_data,
     get_metric_data,
     most_interesting,
 )
+
+RUNS = {
+    "addition": (
+        1, # ds_len temp
+        "run-addition",
+    ),
+}
 
 
 # Make N_EPOCHS exponentially spaced sets of epochs from 1 to 10,000
@@ -80,7 +87,7 @@ def child(hparams):
                 new_state_dict["transformer." + k] = v
         ckpt["state_dict"] = new_state_dict
 
-        model = trainer.TrainableTransformer(hparams).float()
+        model = training.TrainableTransformer(hparams).float()
         model.load_state_dict(ckpt["state_dict"])
         model = model.to(device).eval()
         dl = model.test_dataloader()
@@ -116,7 +123,7 @@ def child(hparams):
 
 
 if __name__ == "__main__":
-    hparams = trainer.get_args(parser)
+    hparams = training.get_args(parser)
     if hparams.expt_dir is not None:
         child(hparams)
     else:
@@ -128,8 +135,8 @@ if __name__ == "__main__":
             )
             metric_data = get_metric_data(data)
             metric_data = most_interesting(metric_data)
-            for arch in metric_data:
-                interesting_t = int(metric_data[arch]["T"][0].item())
+            for arch in metric_data: # type: ignore
+                interesting_t = int(metric_data[arch]["T"][0].item()) # type: ignore
                 expt = f"{arch}_T-{interesting_t}"
                 print(f"--> expt {expt}")
                 glb = f"{DATA_DIR}/{run}/{expt}_*"

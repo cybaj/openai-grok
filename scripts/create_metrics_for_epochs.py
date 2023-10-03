@@ -12,7 +12,7 @@ import sys
 import subprocess
 import torch
 from torch.multiprocessing import Process
-from grok import trainer
+from grok import training
 from tqdm import tqdm
 from argparse import ArgumentParser
 from collections import Counter
@@ -62,7 +62,7 @@ def parent(expts):
                 sys.exit(result.returncode)
 
 
-hparams = trainer.get_args(parser)
+hparams = training.get_args(parser)
 
 data_dir = hparams.data_dir
 

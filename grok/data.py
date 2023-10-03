@@ -155,16 +155,19 @@ class ArithmeticDataset:
         :returns: (train_dataset, validation_dataset)
         """
 
-        assert (0 < train_pct) and (train_pct < 100)
+        assert (0 < train_pct) and (train_pct <= 100)
 
         ds_name = cls.get_dsname(operator, operand_length)
         eqs = cls.make_data(operator, operand_length)
 
         train_rows, _ = cls.calc_split_len(train_pct, len(eqs))
 
-        train_ds = cls(ds_name, eqs[:train_rows], train=True, data_dir=data_dir)
-        val_ds = cls(ds_name, eqs[train_rows:], train=False, data_dir=data_dir)
-
+        if (train_pct != 100):
+            train_ds = cls(ds_name, eqs[:train_rows], train=True, data_dir=data_dir)
+            val_ds = cls(ds_name, eqs[train_rows:], train=False, data_dir=data_dir)
+            return train_ds, val_ds
+        train_ds = cls(ds_name, eqs, train=True, data_dir=data_dir)
+        val_ds = cls(ds_name, eqs, train=False, data_dir=data_dir)
         return train_ds, val_ds
 
     @classmethod

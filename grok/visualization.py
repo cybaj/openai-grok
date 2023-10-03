@@ -21,7 +21,8 @@ logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger("grok.view_metrics")
 logger.setLevel(logging.ERROR)
 
-GROK_DIR = os.path.expanduser("~/data/grok")
+# GROK_DIR = os.path.expanduser("~/data/grok")
+GROK_DIR = ".."
 IMAGE_DIR = f"{GROK_DIR}/images"
 DATA_DIR = f"{GROK_DIR}/data"
 

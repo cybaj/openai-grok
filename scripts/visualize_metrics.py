@@ -16,6 +16,8 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import numpy as np
 import torch
+from tsne_torch import TorchTSNE as TSNE
+
 import yaml
 from tqdm import tqdm
 
@@ -416,7 +418,8 @@ def create_tsne_graphs(
     b = a + num_eqs
 
     print("Doing T-SNE..")
-    loss_tsne = TSNE(n_components=2, init="pca").fit_transform(loss_t)
+    # loss_tsne = TSNE(n_components=2, init="pca").fit_transform(loss_t)
+    loss_tsne = TSNE(n_components=2).fit_transform(loss_t)
     print("...done T-SNE.")
 
     ncols = 1
