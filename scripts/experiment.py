@@ -15,7 +15,7 @@ batchfracs = [0.5, 0.4, 0.3, 0.2]
 operators = grok.data.VALID_OPERATORS.keys()
 
 def format_command(name, gpu, batchfrac, trpct, operator):
-    logdir = f'run-{operator}-batchfrac-{batchfrac}-trpct-{trpct}'
+    logdir = f'{name}/run-{operator}-batchfrac-{batchfrac}-trpct-{trpct}'
     return f'./train.py --logdir={logdir} --gpu={gpu} --batchsize={batchfrac} --train_data_pct={trpct} --math_operator={operator} weight_decay=1.0'
 
 def plan(args):
