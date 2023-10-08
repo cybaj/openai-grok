@@ -6,26 +6,22 @@ from argparse import ArgumentParser
 import grok
 import subprocess
 
-parser = ArgumentParser()
+parser = grok.training.add_args()
 parser.add_argument('--name', type=str, default='experiment')
-parser.add_argument('--gpu', type=int, default=0)
 
 trpcts = [50, 25, 10]
 batchfracs = [0.5, 0.4, 0.3, 0.2]
 operators = grok.data.VALID_OPERATORS.keys()
 
-def format_command(name, gpu, batchfrac, trpct, operator):
-    logdir = f'{name}/run-{operator}-batchfrac-{batchfrac}-trpct-{trpct}'
-    return f'python scripts/train.py --logdir={logdir} --gpu={gpu} --batchsize={batchfrac} --train_data_pct={trpct} --math_operator={operator} --weight_decay=1.0'
+def format_command(batchfrac, trpct, operator, args):
+    logdir = f'{args.name}/run-{operator}-batchfrac-{batchfrac}-trpct-{trpct}'
+    return f'python scripts/train.py --logdir={logdir} --gpu={args.gpu} --batchsize={batchfrac} --train_data_pct={trpct} --math_operator={operator} --weight_decay={args.weight_decay} --max_steps={args.max_steps}'
 
 def plan(args):
-    name = args.name
-    gpu = args.gpu
-
     for trpct in trpcts:
         for batchfrac in batchfracs:
             for operator in operators:
-                yield format_command(name, gpu, batchfrac, trpct, operator)
+                yield format_command(batchfrac, trpct, operator, args)
 
 def main():
     args = parser.parse_args()
