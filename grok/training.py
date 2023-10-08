@@ -803,7 +803,8 @@ def train(hparams: Namespace) -> None:
         "log_every_n_steps": 1
     }
     if torch.cuda.is_available() and hparams.gpu >= 0:
-        trainer_args["gpus"] = [hparams.gpu]
+        trainer_args["accelerator"] = "gpu"
+        trainer_args["devices"] = [hparams.gpu]
 
     trainer = Trainer(**trainer_args)
 
