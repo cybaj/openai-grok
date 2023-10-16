@@ -230,23 +230,23 @@ class ArithmeticDataset:
                     continue
                 else:
                     c = a
-                    a = (b * c) % MODULUS
+                    a = (b * c) % MODULUS # type: ignore
             elif operator == "s5":
-                c = b[a]
+                c = b[a] # type: ignore
             elif operator == "s5conj":
-                c = a * b * (a.__invert__())
+                c = a * b * (a.__invert__()) # type: ignore
             elif operator == "s5aba":
                 c = a * b * a
             elif operator == "+*":
-                if a % 2 == 0:
-                    c = (a + b) % MODULUS
+                if a % 2 == 0: # type: ignore
+                    c = (a + b) % MODULUS # type: ignore
                 else:
-                    c = (a * b) % MODULUS
+                    c = (a * b) % MODULUS # type: ignore
             elif operator == "+-":
-                if a % 2 == 0:
-                    c = (a + b) % MODULUS
+                if a % 2 == 0: # type: ignore
+                    c = (a + b) % MODULUS # type: ignore
                 else:
-                    c = (a - b) % MODULUS
+                    c = (a - b) % MODULUS # type: ignore
             elif "_mod_" in operator:
                 expression = operator.split("_mod_")[0]
                 function = eval(f"lambda x, y: ({expression})")

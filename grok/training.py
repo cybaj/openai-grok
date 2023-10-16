@@ -476,7 +476,7 @@ class TrainableTransformer(LightningModule):
         :param outputs: a list of tuples from self.training_step()
         """
 
-        output: Dict[str, Any] = {}
+        output: Dict[str, Any] = {} # y_hat_rhs, attentions, values
         if self.hparams.save_outputs:  # type: ignore
             y_hat_rhs = torch.cat([x["y_hat_rhs"] for x in outputs])
             output["y_hat_rhs"] = y_hat_rhs
