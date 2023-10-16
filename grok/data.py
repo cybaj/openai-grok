@@ -5,7 +5,7 @@ from concurrent.futures import ProcessPoolExecutor
 import torch
 from torch import Tensor, LongTensor
 import numpy as np
-from typing import List, Dict, Union, Optional
+from typing import List, Dict, Union, Optional, Set
 from tqdm import tqdm
 
 from sympy.combinatorics.permutations import Permutation
@@ -36,8 +36,10 @@ VALID_OPERATORS = {
     "reverse": "reverse",
     "copy": "copy",
 }
+COMMUTATIVE_OPERATORS = ["+", "*", "x**2+y**2_mod_97", "x**3+x*y_mod_97", "+*"]
 EOS_TOKEN = "<|eos|>"
 EQ_TOKEN = "="
+AND_TOKEN = "&"
 MODULUS = 97
 NUMS = list(range(MODULUS))
 
@@ -145,6 +147,7 @@ class ArithmeticDataset:
         operator: str,
         operand_length: Optional[int] = None,
         data_dir: str = DEFAULT_DATA_DIR,
+        commutativility: float = 0.,
     ):
         """
         Creates training and validation datasets
@@ -152,6 +155,7 @@ class ArithmeticDataset:
         :param train_pct: percentage of total equations used for training data
         :param operator: The arithmetic operator for this dataset e.g. '+', '-', '*', '/', 'sort'
         :param operand_length: for list based datasets the length of the lists
+        :param commutativility: for commutative operators, the ratio that the swapped operands data size of total data size
         :returns: (train_dataset, validation_dataset)
         """
 
@@ -165,6 +169,11 @@ class ArithmeticDataset:
         if (train_pct != 100):
             train_ds = cls(ds_name, eqs[:train_rows], train=True, data_dir=data_dir)
             val_ds = cls(ds_name, eqs[train_rows:], train=False, data_dir=data_dir)
+
+            # remove duplicates from validation set
+            intersection = train_ds.intersection(val_ds)
+            val_ds.apply_duplication_removal(intersection)
+
             return train_ds, val_ds
         train_ds = cls(ds_name, eqs, train=True, data_dir=data_dir)
         val_ds = cls(ds_name, eqs, train=False, data_dir=data_dir)
@@ -183,6 +192,8 @@ class ArithmeticDataset:
         self.tokenizer = ArithmeticTokenizer(data_dir)
         self.name = name
         self.train = train
+        # unique equations
+        self.raw_data = set(data)
         if isinstance(data, list):
             self.data = self.tokenizer.encode(data)
         else:
@@ -203,7 +214,7 @@ class ArithmeticDataset:
     #    return " ".join(map(render, parts))
 
     @classmethod
-    def _make_binary_operation_data(cls, operator: str, operands=None) -> List[str]:
+    def _make_binary_operation_data(cls, operator: str, operands=None, commutativility: float = 0.) -> List[str]:
         if operator == "s5":
             operands = operands or list(range(5))
             elems = map(np.array, itertools.permutations(operands))
@@ -224,6 +235,7 @@ class ArithmeticDataset:
         #     print("elems", list(elems))
         #     print("tuples", list(tuples))
         eqs = []
+        current_commuted_length = 0
         for a, b in tuples:
             if operator == "/":
                 if b == 0:
@@ -253,8 +265,23 @@ class ArithmeticDataset:
                 c = function(a, b)
             else:
                 c = eval(f"({a} {operator} {b}) % {MODULUS}")
-            eq = " ".join(map(render, [a, operator, b, "=", c]))
-            eqs.append(eq)
+
+            # no commutativility
+            if commutativility == 0:
+                eq = " ".join(map(render, [a, operator, b, "=", c]))
+                eqs.append(eq)
+            # applying commutativility
+            else:
+                enough_eq = cls._check_commutativility_enough(eqs, commutativility, current_commuted_length)
+                if not enough_eq:
+                    eq1 = " ".join(map(render, [a, operator, b, "=", c]))
+                    eq2 = " ".join(map(render, [b, operator, a, "=", c]))
+                    if eq1 not in eqs:
+                        eqs.append(eq1)
+                        current_commuted_length += 1
+                    if eq2 not in eqs:
+                        eqs.append(eq2)
+                        current_commuted_length += 1
 
         # if operator == "s5":
         #     print("eqs", eqs)
@@ -339,12 +366,22 @@ class ArithmeticDataset:
             return operator, 0
 
     @classmethod
-    def make_data(cls, operator, operands=None, shuffle=True, seed=0) -> List[str]:
+    def make_data(
+            cls,
+            operator,
+            operands=None,
+            shuffle=True,
+            seed=0,
+            commutativility: float = 0.
+        ) -> List[str]:
         operator, noise_level = cls._get_operator_and_noise_level(operator)
         assert operator in VALID_OPERATORS
+        assert 0 <= commutativility <= 1
+        if commutativility != 0:
+            assert operator in COMMUTATIVE_OPERATORS
 
         if operator not in ["sort", "reverse", "copy"]:
-            data = cls._make_binary_operation_data(operator)
+            data = cls._make_binary_operation_data(operator, None, commutativility)
         else:
             data = cls._make_unary_operation_data(operator, operands)
 
@@ -390,6 +427,38 @@ class ArithmeticDataset:
                 dtype=torch.int,
             )
         return lists
+
+    @classmethod
+    def _get_commutativity(cls, operator):
+        if operator in COMMUTATIVE_OPERATORS:
+            return True
+        else:
+            return False
+
+    @classmethod
+    def _check_commutativility_enough(cls, pairs, target_commutativility, current_commuted_length):
+        total_length = len(pairs)
+        if target_commutativility == 0:
+            return True
+        else:
+            return current_commuted_length / total_length >= target_commutativility
+
+    def diff(self, other: "ArithmeticDataset"):
+        """Returns the difference between this dataset and another dataset"""
+        return self.raw_data.difference(other.raw_data)
+
+    def intersection(self, other: "ArithmeticDataset"):
+        """Returns the intersection between this dataset and another dataset"""
+        return self.raw_data.intersection(other.raw_data)
+
+    def union(self, other: "ArithmeticDataset"):
+        """Returns the union between this dataset and another dataset"""
+        return self.raw_data.union(other.raw_data)
+
+    def apply_duplication_removal(self, interaction: Set[str]):
+        removed_raw = self.raw_data.difference(interaction)
+        self.raw_data = removed_raw
+        self.data = self.tokenizer.encode(list(removed_raw))
 
 
 class ArithmeticIterator(torch.utils.data.IterableDataset): # type: ignore
