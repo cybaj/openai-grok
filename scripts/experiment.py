@@ -1,11 +1,13 @@
 #!/usr/bin/env python
+from argparse import ArgumentParser
 import logging
+import os
+import subprocess
+
+import grok
 logging.basicConfig(level=logging.ERROR)
 
-from argparse import ArgumentParser
-import grok
-import subprocess
-import os
+
 
 parser = grok.training.add_args()
 parser.add_argument('--name', type=str, default='experiment')
