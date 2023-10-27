@@ -11,9 +11,6 @@ from torch import tensor, Tensor
 from torch.optim.lr_scheduler import LambdaLR
 import pytorch_lightning as pl
 
-from argparse import ArgumentParser
-
-
 class Linear(nn.Linear):
     def __init__(self, *args, **kwargs):
         self.weight_noise = kwargs.pop("weight_noise")
@@ -27,7 +24,7 @@ class Linear(nn.Linear):
         else:
             bias = self.bias
             weight = self.weight
-            
+
         return F.linear(
             input,
             weight,

@@ -883,7 +883,8 @@ def compute_sharpness(hparams: Namespace, ckpts) -> None:
         "log_every_n_steps": 1
     }
     if torch.cuda.is_available() and hparams.gpu >= 0:
-        trainer_args["gpus"] = [hparams.gpu]
+        trainer_args["accelerator"] = "gpu"
+        trainer_args["devices"] = [hparams.gpu]
 
     trainer = Trainer(**trainer_args)
 
@@ -918,7 +919,7 @@ def add_args(parser=None) -> Namespace:
     if parser is None:
         parser = ArgumentParser()
     parser.add_argument("--random_seed", type=int, default=-1)
-    parser.add_argument("--gpu", type=int, default=0)
+    parser.add_argument("--gpu", type=int, default=None)
     parser.add_argument("--max_epochs", type=int, default=None)
     parser.add_argument("--max_steps", type=int, default=100000)
     # parser.add_argument("--checkpoint_period", type=int, default=1)
