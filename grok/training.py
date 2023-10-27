@@ -210,7 +210,7 @@ class TrainableTransformer(LightningModule):
             operator=self.hparams.math_operator,  # type: ignore
             operand_length=self.hparams.operand_length,  # type: ignore
             data_dir=self.hparams.datadir,  # type: ignore
-            commutativility==self.hparams.commutativility,  # type: ignore
+            commutativility=self.hparams.commutativility,  # type: ignore
             duplication=self.hparams.duplication,  # type: ignore
         )
 
