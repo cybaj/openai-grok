@@ -1,17 +1,15 @@
+from concurrent.futures import ProcessPoolExecutor
 import itertools
 import math
-from concurrent.futures import ProcessPoolExecutor
-
-import torch
-from torch import Tensor, LongTensor
-import numpy as np
-from typing import List, Dict, Union, Optional, Set
-from tqdm import tqdm
-
-from sympy.combinatorics.permutations import Permutation
-from mod import Mod
+from typing import Dict, List, Optional, Set, Union
 
 import blobfile as bf
+from mod import Mod
+import numpy as np
+from sympy.combinatorics.permutations import Permutation
+import torch
+from torch import LongTensor, Tensor
+from tqdm import tqdm
 
 
 VALID_OPERATORS = {
@@ -147,7 +145,7 @@ class ArithmeticDataset:
         operator: str,
         operand_length: Optional[int] = None,
         data_dir: str = DEFAULT_DATA_DIR,
-        commutativility: float = 0.,
+        commutativility: Optional[float] = None,
     ):
         """
         Creates training and validation datasets
@@ -162,7 +160,7 @@ class ArithmeticDataset:
         assert (0 < train_pct) and (train_pct <= 100)
 
         ds_name = cls.get_dsname(operator, operand_length)
-        eqs = cls.make_data(operator, operand_length)
+        eqs = cls.make_data(operator, commutativility=commutativility)
 
         train_rows, _ = cls.calc_split_len(train_pct, len(eqs))
 
@@ -214,7 +212,7 @@ class ArithmeticDataset:
     #    return " ".join(map(render, parts))
 
     @classmethod
-    def _make_binary_operation_data(cls, operator: str, operands=None, commutativility: float = 0.) -> List[str]:
+    def _make_binary_operation_data(cls, operator: str, commutativility: Optional[float], operands=None) -> List[str]:
         if operator == "s5":
             operands = operands or list(range(5))
             elems = map(np.array, itertools.permutations(operands))
@@ -267,7 +265,8 @@ class ArithmeticDataset:
                 c = eval(f"({a} {operator} {b}) % {MODULUS}")
 
             # no commutativility
-            if commutativility == 0:
+            if commutativility == None:
+                print('what?')
                 eq = " ".join(map(render, [a, operator, b, "=", c]))
                 eqs.append(eq)
             # applying commutativility
@@ -369,19 +368,19 @@ class ArithmeticDataset:
     def make_data(
             cls,
             operator,
+            commutativility=None,
             operands=None,
             shuffle=True,
             seed=0,
-            commutativility: float = 0.
         ) -> List[str]:
         operator, noise_level = cls._get_operator_and_noise_level(operator)
         assert operator in VALID_OPERATORS
-        assert 0 <= commutativility <= 1
-        if commutativility != 0:
+        if commutativility is not None:
+            assert 0 <= commutativility <= 1
             assert operator in COMMUTATIVE_OPERATORS
 
         if operator not in ["sort", "reverse", "copy"]:
-            data = cls._make_binary_operation_data(operator, None, commutativility)
+            data = cls._make_binary_operation_data(operator, commutativility, None)
         else:
             data = cls._make_unary_operation_data(operator, operands)
 
