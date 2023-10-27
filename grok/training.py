@@ -69,6 +69,7 @@ def get_args(parser: ArgumentParser) -> Namespace:
     parser.add_argument("--anneal_lr_steps", type=int, default=100000)
     parser.add_argument("--anneal_lr", dest="anneal_lr", action="store_true")
     parser.set_defaults(anneal_lr=False)
+    parser.add_argument("--commutativility", type=float, default=None)
     parser.add_argument("--duplication", type=float, default=None)
 
     parser.add_argument("--max_lr", type=float, default=1e-3)
@@ -169,6 +170,7 @@ class TrainableTransformer(LightningModule):
         parser.add_argument("--anneal_lr_steps", type=int, default=100000)
         parser.add_argument("--anneal_lr", dest="anneal_lr", action="store_true")
         parser.set_defaults(anneal_lr=False)
+        parser.add_argument("--commutativility", type=float, default=None)
         parser.add_argument("--duplication", type=float, default=None)
 
         parser.add_argument("--max_lr", type=float, default=1e-3)
@@ -208,6 +210,7 @@ class TrainableTransformer(LightningModule):
             operator=self.hparams.math_operator,  # type: ignore
             operand_length=self.hparams.operand_length,  # type: ignore
             data_dir=self.hparams.datadir,  # type: ignore
+            commutativility==self.hparams.commutativility,  # type: ignore
             duplication=self.hparams.duplication,  # type: ignore
         )
 
