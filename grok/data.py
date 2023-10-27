@@ -146,6 +146,7 @@ class ArithmeticDataset:
         operand_length: Optional[int] = None,
         data_dir: str = DEFAULT_DATA_DIR,
         commutativility: Optional[float] = None,
+        duplication: Optional[float] = None,
     ):
         """
         Creates training and validation datasets
@@ -154,6 +155,7 @@ class ArithmeticDataset:
         :param operator: The arithmetic operator for this dataset e.g. '+', '-', '*', '/', 'sort'
         :param operand_length: for list based datasets the length of the lists
         :param commutativility: for commutative operators, the ratio that the swapped operands data size of total data size
+        :param duplication: duplication factor for the dataset
         :returns: (train_dataset, validation_dataset)
         """
 
@@ -161,6 +163,11 @@ class ArithmeticDataset:
 
         ds_name = cls.get_dsname(operator, operand_length)
         eqs = cls.make_data(operator, commutativility=commutativility)
+
+        if duplication is not None:
+            eqs = eqs + eqs[: int(len(eqs) * duplication)]
+
+        print(f"total number of equations: {len(eqs)}")
 
         train_rows, _ = cls.calc_split_len(train_pct, len(eqs))
 
@@ -266,7 +273,6 @@ class ArithmeticDataset:
 
             # no commutativility
             if commutativility == None:
-                print('what?')
                 eq = " ".join(map(render, [a, operator, b, "=", c]))
                 eqs.append(eq)
             # applying commutativility

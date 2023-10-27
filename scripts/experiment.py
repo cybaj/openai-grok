@@ -25,6 +25,8 @@ def format_command(name, batchfrac, trpct, operator, args):
            f'--batchsize={batchfrac} --train_data_pct={trpct} \\'
            f'--math_operator={operator} --weight_decay=1.0 \\'
            f'--max_steps {args.max_steps}')
+    if args.duplication:
+        cmd += f' --duplication={args.duplication}'
     if args.gpu:
         cmd += f' --gpu={args.gpu}'
     return cmd
