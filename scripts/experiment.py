@@ -21,10 +21,7 @@ operators_dict = grok.data.VALID_OPERATORS
 
 def format_command(name, batchfrac, trpct, operator, args):
     logdir = f'{name}/run-{operators_dict[operator]}-batchfrac-{batchfrac}-trpct-{trpct}'
-    cmd = (f'python scripts/train.py --logdir={logdir} \\'
-           f'--batchsize={batchfrac} --train_data_pct={trpct} \\'
-           f'--math_operator={operator} --weight_decay=1.0 \\'
-           f'--max_steps {args.max_steps}')
+    cmd = f'python scripts/train.py --logdir={logdir} --batchsize={batchfrac} --train_data_pct={trpct} --math_operator={operator} --weight_decay=1.0 --max_steps {args.max_steps}'
     if args.duplication:
         cmd += f' --duplication={args.duplication}'
     if args.gpu:
