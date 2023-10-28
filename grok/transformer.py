@@ -11,6 +11,7 @@ from torch import tensor, Tensor
 from torch.optim.lr_scheduler import LambdaLR
 import pytorch_lightning as pl
 
+
 class Linear(nn.Linear):
     def __init__(self, *args, **kwargs):
         self.weight_noise = kwargs.pop("weight_noise")
@@ -18,7 +19,11 @@ class Linear(nn.Linear):
 
     def forward(self, input: Tensor) -> Tensor:
         if self.weight_noise > 0 and self.training:
-            bias = self.bias if self.bias is None else self.bias + torch.randn_like(self.bias) * self.weight_noise
+            bias = (
+                self.bias
+                if self.bias is None
+                else self.bias + torch.randn_like(self.bias) * self.weight_noise
+            )
             weight = self.weight + torch.randn_like(self.weight) * self.weight_noise
             # weight = self.weight * torch.exp(torch.randn_like(self.weight) * self.weight_noise)
         else:
@@ -31,6 +36,7 @@ class Linear(nn.Linear):
             bias,
         )
 
+
 class LayerNorm(nn.LayerNorm):
     def __init__(self, *args, **kwargs):
         self.weight_noise = kwargs.pop("weight_noise")
@@ -38,7 +44,11 @@ class LayerNorm(nn.LayerNorm):
 
     def forward(self, input: Tensor) -> Tensor:
         if self.weight_noise > 0 and self.training:
-            bias = self.bias if self.bias is None else self.bias + torch.randn_like(self.bias) * self.weight_noise
+            bias = (
+                self.bias
+                if self.bias is None
+                else self.bias + torch.randn_like(self.bias) * self.weight_noise
+            )
             weight = self.weight + torch.randn_like(self.weight) * self.weight_noise
             # weight = self.weight * torch.exp(torch.randn_like(self.weight) * self.weight_noise)
         else:
@@ -77,7 +87,6 @@ class Embedding(nn.Embedding):
 
 class AttentionHead(nn.Module):
     def __init__(self, d_model: int, d_key: int, weight_noise: float) -> None:
-
         super().__init__()
 
         self.d_key = d_key
@@ -97,7 +106,6 @@ class AttentionHead(nn.Module):
         mask: Union[Tensor, None] = None,
         save_activations: bool = False,
     ) -> Tuple[Tensor, Union[Tensor, None], Union[Tensor, None]]:
-
         # project queries, keys, values
         queries = self.Wq(queries)
         keys = self.Wk(keys)
@@ -146,7 +154,6 @@ class MultiHeadAttention(nn.Module):
         mask: Tensor = None,
         save_activations=False,
     ) -> Tuple[Tensor, List[Tensor], List[Tensor]]:
-
         head_outputs = [
             h(
                 queries=queries,
@@ -260,7 +267,6 @@ class Decoder(nn.Module):
         self_attn_mask: Tensor = None,
         save_activations=False,
     ) -> Tuple[Tensor, List[List[Tensor]], List[List[Tensor]]]:
-
         a = x
         attentions = []
         values = []

@@ -35,6 +35,7 @@ from grok.measure import get_sharpness
 
 DEFAULT_LOG_DIR = "logs"
 
+
 def get_args(parser: ArgumentParser) -> Namespace:
     """
     Parses command line arguments for the training script
@@ -205,7 +206,10 @@ class TrainableTransformer(LightningModule):
         Loads training data to self.train_dataset
         Loads validation data to self.val_dataset
         """
-        (self.train_dataset, self.val_dataset,) = ArithmeticDataset.splits(
+        (
+            self.train_dataset,
+            self.val_dataset,
+        ) = ArithmeticDataset.splits(
             train_pct=self.hparams.train_data_pct,  # type: ignore
             operator=self.hparams.math_operator,  # type: ignore
             operand_length=self.hparams.operand_length,  # type: ignore
@@ -253,7 +257,9 @@ class TrainableTransformer(LightningModule):
         """
         device = self.transformer.embedding.weight.device
         iterator = ArithmeticIterator(
-            self.val_dataset, device, batchsize_hint=-1  # type: ignore
+            self.val_dataset,
+            device,
+            batchsize_hint=-1,  # type: ignore
         )
         return iterator
 
@@ -362,7 +368,8 @@ class TrainableTransformer(LightningModule):
         x = batch["text"]  # shape = batchsize * context_len
         y = batch["target"]  # shape = batchsize * context_len
         y_hat, attentions, values = self(
-            x=x, save_activations=self.hparams.save_activations  # type: ignore
+            x=x,
+            save_activations=self.hparams.save_activations,  # type: ignore
         )  # shape = batchsize * context_len * vocab_size
         y_hat = y_hat.transpose(-2, -1)  # shape = batchsize * vocab_size * context_len
 
@@ -425,7 +432,6 @@ class TrainableTransformer(LightningModule):
             return loss, grad_vec
         return loss, acc, coeff, x_lhs, y_hat_rhs, attentions, values
 
-
     def _save_inputs(self, outputs: Dict, ds: str) -> None:
         """
         Saves the input equations to disk for analysis later
@@ -482,7 +488,7 @@ class TrainableTransformer(LightningModule):
         :param outputs: a list of tuples from self.training_step()
         """
 
-        output: Dict[str, Any] = {} # y_hat_rhs, attentions, values
+        output: Dict[str, Any] = {}  # y_hat_rhs, attentions, values
         if self.hparams.save_outputs:  # type: ignore
             y_hat_rhs = torch.cat([x["y_hat_rhs"] for x in outputs])
             output["y_hat_rhs"] = y_hat_rhs
@@ -764,11 +770,12 @@ def train(hparams: Namespace) -> None:
     hparams.logdir = os.path.abspath(hparams.logdir)
 
     # Make sure d_model, heads, and d_key are compatible
-    assert (
-        hparams.d_model % hparams.n_heads == 0
-    ), "n_heads=%s does not evenly divide d_model=%s" % (
-        hparams.n_heads,
-        hparams.d_model,
+    assert hparams.d_model % hparams.n_heads == 0, (
+        "n_heads=%s does not evenly divide d_model=%s"
+        % (
+            hparams.n_heads,
+            hparams.d_model,
+        )
     )
     hparams.d_key = hparams.d_model / hparams.n_heads
 
@@ -806,7 +813,7 @@ def train(hparams: Namespace) -> None:
         "profiler": False,
         # "checkpoint_callback": checkpointer,
         "logger": logger,
-        "log_every_n_steps": 1
+        "log_every_n_steps": 1,
     }
     if torch.cuda.is_available() and hparams.gpu and hparams.gpu >= 0:
         trainer_args["accelerator"] = "gpu"
@@ -851,11 +858,12 @@ def compute_sharpness(hparams: Namespace, ckpts) -> None:
     hparams.logdir = os.path.abspath(hparams.logdir)
 
     # Make sure d_model, heads, and d_key are compatible
-    assert (
-        hparams.d_model % hparams.n_heads == 0
-    ), "n_heads=%s does not evenly divide d_model=%s" % (
-        hparams.n_heads,
-        hparams.d_model,
+    assert hparams.d_model % hparams.n_heads == 0, (
+        "n_heads=%s does not evenly divide d_model=%s"
+        % (
+            hparams.n_heads,
+            hparams.d_model,
+        )
     )
     hparams.d_key = hparams.d_model / hparams.n_heads
 
@@ -877,7 +885,6 @@ def compute_sharpness(hparams: Namespace, ckpts) -> None:
 
     logger = CSVLogger(hparams.logdir)
 
-
     trainer_args = {
         "max_steps": hparams.max_steps,
         "min_steps": hparams.max_steps,
@@ -886,7 +893,7 @@ def compute_sharpness(hparams: Namespace, ckpts) -> None:
         "profiler": False,
         # "checkpoint_callback": checkpointer,
         "logger": logger,
-        "log_every_n_steps": 1
+        "log_every_n_steps": 1,
     }
     if torch.cuda.is_available() and hparams.gpu >= 0:
         trainer_args["accelerator"] = "gpu"

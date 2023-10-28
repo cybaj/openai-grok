@@ -168,7 +168,6 @@ def calculate(trained_model, init_model, device, dataset_size, margin, input_dim
 
     measure, bound = {}, {}
     with torch.no_grad():
-
         # Compute measures
         measure["L_{1,inf} norm"] = (
             compute_measure(

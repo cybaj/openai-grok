@@ -135,6 +135,7 @@ class ArithmeticTokenizer:
         with bf.BlobFile(bf.join(data_dir, cls.token_file), "w") as f:
             f.write("\n".join(tokens))
 
+
 class ArithmeticDataset:
     """A Dataset of arithmetic equations"""
 
@@ -171,7 +172,7 @@ class ArithmeticDataset:
 
         train_rows, _ = cls.calc_split_len(train_pct, len(eqs))
 
-        if (train_pct != 100):
+        if train_pct != 100:
             train_ds = cls(ds_name, eqs[:train_rows], train=True, data_dir=data_dir)
             val_ds = cls(ds_name, eqs[train_rows:], train=False, data_dir=data_dir)
 
@@ -219,7 +220,9 @@ class ArithmeticDataset:
     #    return " ".join(map(render, parts))
 
     @classmethod
-    def _make_binary_operation_data(cls, operator: str, commutativility: Optional[float], operands=None) -> List[str]:
+    def _make_binary_operation_data(
+        cls, operator: str, commutativility: Optional[float], operands=None
+    ) -> List[str]:
         if operator == "s5":
             operands = operands or list(range(5))
             elems = map(np.array, itertools.permutations(operands))
@@ -247,23 +250,23 @@ class ArithmeticDataset:
                     continue
                 else:
                     c = a
-                    a = (b * c) % MODULUS # type: ignore
+                    a = (b * c) % MODULUS  # type: ignore
             elif operator == "s5":
-                c = b[a] # type: ignore
+                c = b[a]  # type: ignore
             elif operator == "s5conj":
-                c = a * b * (a.__invert__()) # type: ignore
+                c = a * b * (a.__invert__())  # type: ignore
             elif operator == "s5aba":
                 c = a * b * a
             elif operator == "+*":
-                if a % 2 == 0: # type: ignore
-                    c = (a + b) % MODULUS # type: ignore
+                if a % 2 == 0:  # type: ignore
+                    c = (a + b) % MODULUS  # type: ignore
                 else:
-                    c = (a * b) % MODULUS # type: ignore
+                    c = (a * b) % MODULUS  # type: ignore
             elif operator == "+-":
-                if a % 2 == 0: # type: ignore
-                    c = (a + b) % MODULUS # type: ignore
+                if a % 2 == 0:  # type: ignore
+                    c = (a + b) % MODULUS  # type: ignore
                 else:
-                    c = (a - b) % MODULUS # type: ignore
+                    c = (a - b) % MODULUS  # type: ignore
             elif "_mod_" in operator:
                 expression = operator.split("_mod_")[0]
                 function = eval(f"lambda x, y: ({expression})")
@@ -277,7 +280,9 @@ class ArithmeticDataset:
                 eqs.append(eq)
             # applying commutativility
             else:
-                enough_eq = cls._check_commutativility_enough(eqs, commutativility, current_commuted_length)
+                enough_eq = cls._check_commutativility_enough(
+                    eqs, commutativility, current_commuted_length
+                )
                 if not enough_eq:
                     eq1 = " ".join(map(render, [a, operator, b, "=", c]))
                     eq2 = " ".join(map(render, [b, operator, a, "=", c]))
@@ -327,7 +332,9 @@ class ArithmeticDataset:
             ]
         else:
             with ProcessPoolExecutor() as executor:
-                eqs = list(executor.map(func, tqdm(zip(operands, rhs), total=num_examples)))
+                eqs = list(
+                    executor.map(func, tqdm(zip(operands, rhs), total=num_examples))
+                )
 
         return eqs
 
@@ -372,13 +379,13 @@ class ArithmeticDataset:
 
     @classmethod
     def make_data(
-            cls,
-            operator,
-            commutativility=None,
-            operands=None,
-            shuffle=True,
-            seed=0,
-        ) -> List[str]:
+        cls,
+        operator,
+        commutativility=None,
+        operands=None,
+        shuffle=True,
+        seed=0,
+    ) -> List[str]:
         operator, noise_level = cls._get_operator_and_noise_level(operator)
         assert operator in VALID_OPERATORS
         if commutativility is not None:
@@ -419,9 +426,9 @@ class ArithmeticDataset:
 
     @classmethod
     def write_dataset(cls, data: List[str], ds_file: str):
-       print(f"-> writing {ds_file}", flush=True)
-       with open(ds_file, "w") as fh:
-           fh.writelines([datum + '\n' for datum in data])
+        print(f"-> writing {ds_file}", flush=True)
+        with open(ds_file, "w") as fh:
+            fh.writelines([datum + "\n" for datum in data])
 
     @classmethod
     def _make_lists(cls, sizes=[2, 3], nums=NUMS):
@@ -441,7 +448,9 @@ class ArithmeticDataset:
             return False
 
     @classmethod
-    def _check_commutativility_enough(cls, pairs, target_commutativility, current_commuted_length):
+    def _check_commutativility_enough(
+        cls, pairs, target_commutativility, current_commuted_length
+    ):
         total_length = len(pairs)
         if target_commutativility == 0:
             return True
@@ -466,7 +475,7 @@ class ArithmeticDataset:
         self.data = self.tokenizer.encode(list(removed_raw))
 
 
-class ArithmeticIterator(torch.utils.data.IterableDataset): # type: ignore
+class ArithmeticIterator(torch.utils.data.IterableDataset):  # type: ignore
     """
     An iterator over batches of data in an ArithmeticDataset
     """
