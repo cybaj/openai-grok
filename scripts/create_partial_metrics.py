@@ -17,6 +17,7 @@ from grok import training
 from tqdm import tqdm
 from argparse import ArgumentParser
 from collections import Counter
+
 # from create_metric_graphs import RUNS
 from grok.visualization import (
     DATA_DIR,
@@ -27,7 +28,7 @@ from grok.visualization import (
 
 RUNS = {
     "addition": (
-        1, # ds_len temp
+        1,  # ds_len temp
         "run-addition",
     ),
 }
@@ -135,8 +136,8 @@ if __name__ == "__main__":
             )
             metric_data = get_metric_data(data)
             metric_data = most_interesting(metric_data)
-            for arch in metric_data: # type: ignore
-                interesting_t = int(metric_data[arch]["T"][0].item()) # type: ignore
+            for arch in metric_data:  # type: ignore
+                interesting_t = int(metric_data[arch]["T"][0].item())  # type: ignore
                 expt = f"{arch}_T-{interesting_t}"
                 print(f"--> expt {expt}")
                 glb = f"{DATA_DIR}/{run}/{expt}_*"

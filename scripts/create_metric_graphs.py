@@ -80,7 +80,6 @@ def create_loss_curves(
         "y": "linear",
     }
 
-
     arch = list(metric_data.keys())[0]
 
     ncols = 2
@@ -170,7 +169,6 @@ def create_max_accuracy_curves(
 
 
 def create_tsne_graphs(operation, expt, run_dir, image_dir=args.image_dir):
-
     saved_pt_dir = f"{run_dir}/activations"
     saved_pts = []
 
@@ -233,7 +231,6 @@ for operation in RUNS:
     ####
 
     ds_len, run = RUNS[operation]
-
 
     data = load_metric_data(f"{DATA_DIR}/{run}", epochs=epochs, load_partial_data=False)
 

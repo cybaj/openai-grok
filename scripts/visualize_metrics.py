@@ -387,7 +387,6 @@ def create_tsne_graphs(
     run_dir,
     image_dir=args.output_dir,
 ):
-
     saved_pt_dir = f"{run_dir}/activations"
     saved_pts = []
 
