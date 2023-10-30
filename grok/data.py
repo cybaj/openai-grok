@@ -156,7 +156,7 @@ class ArithmeticDataset:
         :param operator: The arithmetic operator for this dataset e.g. '+', '-', '*', '/', 'sort'
         :param operand_length: for list based datasets the length of the lists
         :param commutativility: for commutative operators, the ratio that the swapped operands data size of total data size
-        :param duplication: duplication factor for the dataset
+        :param duplication: duplication factor for the training dataset
         :returns: (train_dataset, validation_dataset)
         """
 
@@ -165,15 +165,12 @@ class ArithmeticDataset:
         ds_name = cls.get_dsname(operator, operand_length)
         eqs = cls.make_data(operator, commutativility=commutativility)
 
-        if duplication is not None:
-            eqs = eqs + eqs[: int(len(eqs) * duplication)]
-
-        print(f"total number of equations: {len(eqs)}")
-
         train_rows, _ = cls.calc_split_len(train_pct, len(eqs))
 
         if train_pct != 100:
-            train_ds = cls(ds_name, eqs[:train_rows], train=True, data_dir=data_dir)
+            # duplication to increase the number of training examples
+            training_eqs = cls.get_duplication_eqs(eqs[:train_rows], duplication)
+            train_ds = cls(ds_name, training_eqs, train=True, data_dir=data_dir)
             val_ds = cls(ds_name, eqs[train_rows:], train=False, data_dir=data_dir)
 
             # remove duplicates from validation set
@@ -190,6 +187,13 @@ class ArithmeticDataset:
         train_rows = round(ds_len * (train_pct / 100.0))
         val_rows = ds_len - train_rows
         return train_rows, val_rows
+
+    @classmethod
+    def get_duplication_eqs(cls, eqs, duplication):
+        if duplication is not None:
+            eqs = eqs + eqs[: int(len(eqs) * duplication)]
+        print(f"total number of equations on training: {len(eqs)}")
+        return eqs
 
     def __init__(self, name, data: Union[Tensor, List[str]], train, data_dir) -> None:
         """
