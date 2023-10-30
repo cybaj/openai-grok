@@ -200,6 +200,8 @@ class ArithmeticDataset:
         :param data: A list of equations strings. Each equation must have an '=' in it.
         """
         self.tokenizer = ArithmeticTokenizer(data_dir)
+        self.domain_tokenizer = ArithmeticTokenizer(data_dir)
+        self.codomain_tokenizer = ArithmeticTokenizer(data_dir)
         self.name = name
         self.train = train
         # unique equations

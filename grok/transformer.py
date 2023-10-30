@@ -288,7 +288,8 @@ class Transformer(nn.Module):
         d_model: int = 256,
         dropout: float = 0.1,
         max_context_len: int = 1024,
-        vocab_len: int = 2000,
+        domain_vocab_len: int = 2000,
+        codomain_vocab_len: int = 2000,
         non_linearity: str = "relu",
         weight_noise: float = 0.0,
     ) -> None:
@@ -301,9 +302,10 @@ class Transformer(nn.Module):
         self.max_context_len = max_context_len
         self.non_linearity = non_linearity
 
-        self.vocab_len = vocab_len
+        self.domain_vocab_len = domain_vocab_len
+        self.codomain_vocab_len = codomain_vocab_len
 
-        self.embedding = Embedding(vocab_len, d_model, weight_noise=weight_noise)  # type: ignore
+        self.embedding = Embedding(domain_vocab_len, d_model, weight_noise=weight_noise)  # type: ignore
         self.register_buffer(
             "position_encoding", self._position_encoding(max_context_len, d_model)
         )
@@ -318,7 +320,7 @@ class Transformer(nn.Module):
             weight_noise=weight_noise,
         )
 
-        self.linear = Linear(d_model, vocab_len, bias=False, weight_noise=weight_noise)
+        self.linear = Linear(d_model, codomain_vocab_len, bias=False, weight_noise=weight_noise)
 
     @staticmethod
     def make_mask(context_len: int) -> Tensor:

@@ -119,7 +119,8 @@ class TrainableTransformer(LightningModule):
             hparams.d_model,
             hparams.dropout,
             hparams.max_context_len,
-            len(self.train_dataset.tokenizer),
+            len(self.train_dataset.domain_tokenizer),
+            len(self.train_dataset.codomain_tokenizer),
             hparams.non_linearity,
             weight_noise=self.hparams.weight_noise,
         )
