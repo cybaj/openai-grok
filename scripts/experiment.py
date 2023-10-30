@@ -11,11 +11,12 @@ logging.basicConfig(level=logging.ERROR)
 
 parser = grok.training.add_args()
 parser.add_argument("--name", type=str, default="experiment")
+parser.add_argument("--batchfracs", type=str, default="0.5")
 
 trpcts = [50, 25, 10]
 # trpcts = [25, 10]
 # batchfracs = [0.5, 0.4, 0.3, 0.2]
-batchfracs = [0.2]
+batchfracs = [float(number) for number in parser.parse_args().batchfracs.split(",")]
 operators = grok.data.VALID_OPERATORS.keys()
 operators_dict = grok.data.VALID_OPERATORS
 
