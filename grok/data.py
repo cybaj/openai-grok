@@ -10,7 +10,7 @@ from sympy.combinatorics.permutations import Permutation
 import torch
 from torch import LongTensor, Tensor
 from tqdm import tqdm
-
+import random
 
 VALID_OPERATORS = {
     "+": "addition",
@@ -40,6 +40,10 @@ EQ_TOKEN = "="
 AND_TOKEN = "&"
 MODULUS = 97
 NUMS = list(range(MODULUS))
+
+OPERATOR_TOKENS = list(VALID_OPERATORS.keys())
+SEQ_TOKENS = [EOS_TOKEN]
+CONSTRUCTIVE_TOKENS = [AND_TOKEN]
 
 DEFAULT_DATA_DIR = "data"
 
@@ -126,8 +130,16 @@ class ArithmeticTokenizer:
             + list(sorted(list(VALID_OPERATORS.keys())))
             + list(map(render, NUMS))
             + list(map(render, itertools.permutations(range(5))))  # s5
+            + [AND_TOKEN]
         )
         return tokens
+
+    @classmethod
+    def get_operand_tokens(cls):
+        return [token for token in cls.get_tokens() if token not in OPERATOR_TOKENS and token not in CONSTRUCTIVE_TOKENS and token not in SEQ_TOKENS and token != EQ_TOKEN]
+
+    def get_operand_token_indice(self):
+        return [self.stoi[token] for token in self.get_operand_tokens()]
 
     @classmethod
     def create_token_file(cls, data_dir: str):
@@ -535,6 +547,42 @@ class ArithmeticIterator(torch.utils.data.IterableDataset):  # type: ignore
         else:
             raise ValueError("batchsize_hint must be >= -1")
 
+    def get_asking_mask_indice(self, target_tensor, end_positions, random_flag=False) -> torch.Tensor:
+        """
+        Returns the indices of the asking mask in the input sequence.
+
+        :param target_tensor: the target equations
+        :param end_positions: the positions of the <eos> tokens
+        :param random_flag: if True, sample a random operand token, otherwise use the last operand token
+        :returns: the indices of the asking mask in the input sequence
+        """
+
+        # Get operand token indices
+        operand_token_indice = torch.tensor(self.dataset.tokenizer.get_operand_token_indice())
+
+        # Create masks for each sample in target_tensor to mark where the valid operands are located
+        operand_masks = torch.any(target_tensor.unsqueeze(-1) == operand_token_indice, dim=-1)
+
+        # Zero out positions after <eos> token in each mask
+        for i in range(target_tensor.shape[0]):
+            operand_masks[i, end_positions[i]:] = False
+
+        if random_flag:
+            # Create a tensor to store the random indices for each sample
+            random_choice_indices = torch.zeros(target_tensor.shape[0], dtype=torch.long)
+            for i in range(target_tensor.shape[0]):
+                # Extract positions of the valid operands for the current sample
+                valid_positions = operand_masks[i].nonzero(as_tuple=False).squeeze()
+                # Randomly select one position
+                random_choice_indices[i] = valid_positions[torch.randint(0, len(valid_positions), (1,))]
+
+            asking_mask_indice = random_choice_indices
+        else:
+            # Select the last valid operand position for each sample
+            asking_mask_indice = operand_masks.long().cumsum(dim=1).argmax(dim=1, keepdim=False)
+
+        return asking_mask_indice
+
     def reset_iteration(self, shuffle=True):
         self.index = 0
         if shuffle and self.dataset.train:
@@ -563,7 +611,32 @@ class ArithmeticIterator(torch.utils.data.IterableDataset):  # type: ignore
         indices = self.permutation[batch_begin : batch_begin + self.batchsize]
         text = self.dataset.data[indices, :-1]
         target = self.dataset.data[indices, 1:]
-        batch = {"text": text.to(self.device), "target": target.to(self.device)}
+
+        eq_token_index = self.dataset.tokenizer.stoi[EQ_TOKEN]
+        and_token_index = self.dataset.tokenizer.stoi[AND_TOKEN]
+        end_token_index = self.dataset.tokenizer.stoi[EOS_TOKEN]
+        # eq_positions_list = [
+        #     (target[i] == eq_token_index).nonzero(as_tuple=True)[0]
+        #     for i in range(target.size(0))
+        # ]
+        # and_positions_list = [
+        #     (target[i] == and_token_index).nonzero(as_tuple=True)[0]
+        #     for i in range(target.size(0))
+        # ]
+
+        end_positions = (target == end_token_index).nonzero(as_tuple=True)[1].squeeze()
+        # mask index is about target
+        # so 0th index is the first token of target, never be <eos>
+        asking_mask = self.get_asking_mask_indice(target, end_positions, random_flag=True)
+
+        batch = {
+            "text": text.to(self.device),
+            "target": target.to(self.device),
+            # "eq_positions_list": eq_positions_list,
+            # "and_positions_list": and_positions_list,
+            "end_positions": end_positions,
+            "asking_mask": asking_mask,
+        }
         self.index += 1
         return batch
 
