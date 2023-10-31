@@ -343,6 +343,7 @@ class TrainableTransformer(LightningModule):
         accuracy = row_accuracy.float() * 100  # shape: batchsize
         return accuracy
 
+    # TODO: apply batch updates
     def _step(
         self,
         batch: Dict,
@@ -376,6 +377,7 @@ class TrainableTransformer(LightningModule):
 
         # Note: each sample must have exactly one '=' and all of them must
         # have it in the same position.
+        # TODO: get each eq position from batch
         eq_token_index = self.train_dataset.tokenizer.stoi["="]
         eq_position_t = torch.nonzero(y[0, :] == eq_token_index, as_tuple=False)
         eq_position = int(eq_position_t.squeeze())
@@ -507,6 +509,7 @@ class TrainableTransformer(LightningModule):
             with open(pickle_file, "wb") as fh:
                 torch.save(output, fh)
 
+    # TODO: apply batch updates
     def training_step(self, batch, batch_idx):
         """
         Used by pytorch_lightning
@@ -601,6 +604,7 @@ class TrainableTransformer(LightningModule):
             for k, v in logs.items():
                 self.log(k, v)
 
+    # TODO: apply batch updates
     def validation_step(self, batch, batch_idx):
         """
         Used by pytorch_lightning
@@ -701,6 +705,7 @@ class TrainableTransformer(LightningModule):
         if validation_is_real:
             return logs
 
+    # TODO: apply batch updates
     def test_step(self, batch, batch_idx):
         """
         Used by pytorch_lightning
